@@ -4,265 +4,132 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>EchoLens — environments that explain themselves</title>
-<meta name="description" content="An AI environmental interpretation layer for unfamiliar spaces." />
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#faf8f3; --fg:#221c14; --surface:#ffffff; --muted:#f1ede4;
-    --muted-fg:#6b6356; --border:#e7e1d4; --accent:#c2553a; --accent-fg:#fff;
-    --anchor:#1f4c6b; --anchor-fg:#fff; --warn:#c8472a; --radius:1rem;
-  }
-  html.mode-urgent{
-    --bg:#15110c; --fg:#fff; --surface:#1d1810; --muted:#2a2418;
-    --muted-fg:#e8e2d0; --border:rgba(255,255,255,.18);
-    --accent:#ffcc33; --accent-fg:#15110c; --anchor:#ffcc33; --anchor-fg:#15110c;
-    --warn:#ff5530; --radius:.25rem;
-  }
-  html.mode-a11y{
-    --bg:#fff; --fg:#080808; --surface:#fff; --muted:#eee;
-    --muted-fg:#363636; --border:#1a1a1a;
-    --accent:#1c3fb8; --accent-fg:#fff; --anchor:#0f2a78; --anchor-fg:#fff;
-    --warn:#a8281a; --radius:1.25rem;
-  }
-  html,body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  .font-display{font-family:'Instrument Serif',Georgia,serif;letter-spacing:-.01em}
-  html.mode-a11y body{font-size:17px}
-  html.mode-urgent body{font-weight:600;letter-spacing:-.01em}
-  .bg-surface{background:var(--surface)} .bg-muted{background:var(--muted)}
-  .bg-accent{background:var(--accent)} .text-accent{color:var(--accent)}
-  .text-accent-fg{color:var(--accent-fg)} .bg-anchor{background:var(--anchor)}
-  .text-anchor-fg{color:var(--anchor-fg)} .text-muted-fg{color:var(--muted-fg)}
-  .text-fg{color:var(--fg)} .border-app{border-color:var(--border)}
-  .border-warn{border-color:var(--warn)} .bg-warn-soft{background:color-mix(in oklab,var(--warn) 12%,transparent)}
-  .text-warn{color:var(--warn)} .ring-accent{box-shadow:0 0 0 2px var(--accent)}
-  .shadow-card{box-shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(0,0,0,.12)}
-  .shadow-float{box-shadow:0 2px 0 rgba(0,0,0,.04),0 24px 48px -20px rgba(0,0,0,.18)}
+  :root{ --bg:#faf8f3; --fg:#221c14; --surface:#ffffff; --muted:#f1ede4; --muted-fg:#6b6356; --border:#e7e1d4; --accent:#c2553a; --accent-fg:#fff; --warn:#c8472a; --radius:1rem; }
+  html,body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif}
   .radius{border-radius:var(--radius)}
-  @keyframes pulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
-  .anim-pulse{animation:pulse 1.6s ease-in-out infinite}
+  .skeleton{background:linear-gradient(90deg,var(--muted) 0%,#f9f9f9 50%,var(--muted) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
   @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-  .skeleton{background:linear-gradient(90deg,var(--muted) 0%,color-mix(in oklab,var(--muted) 60%,var(--bg)) 50%,var(--muted) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
 </style>
 </head>
 <body>
-<main class="mx-auto w-full max-w-md sm:max-w-lg px-4 pt-8 pb-16 min-h-screen">
-
+<main class="mx-auto w-full max-w-md px-4 pt-8 pb-16 min-h-screen">
   <header class="mb-6">
-    <div class="flex items-center gap-2">
-      <span class="inline-block w-2.5 h-2.5 rounded-full bg-accent anim-pulse"></span>
-      <span class="text-[11px] font-semibold uppercase tracking-[.18em] text-muted-fg">EchoLens</span>
-    </div>
-    <h1 class="mt-2 font-display text-4xl leading-[1.05]">
-      Spaces that<br><span class="italic text-accent">explain themselves.</span>
-    </h1>
-    <p id="subtitle" class="mt-2 text-sm text-muted-fg">What if the world could explain itself?</p>
+    <h1 class="text-4xl font-serif">EchoLens</h1>
+    <p id="subtitle" class="text-sm text-gray-500">What if the world could explain itself?</p>
   </header>
 
-  <details id="keyBox" class="mb-4 radius border border-app bg-surface shadow-card p-3 text-sm">
-    <summary class="cursor-pointer font-semibold">Gemini API key <span id="keyState" class="text-muted-fg font-normal"></span></summary>
-    <p class="mt-2 text-xs text-muted-fg">Get a free key at <a class="underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Stored only in your browser.</p>
+  <details id="keyBox" class="mb-4 radius border p-3 text-sm bg-white">
+    <summary class="cursor-pointer font-semibold">Gemini API Key <span id="keyState"></span></summary>
     <div class="mt-2 flex gap-2">
-      <input id="apiKey" type="password" placeholder="AIza..." class="flex-1 rounded-lg border border-app bg-bg px-3 py-2 text-sm" />
-      <button id="saveKey" class="rounded-lg bg-accent text-accent-fg px-3 py-2 text-sm font-semibold">Save</button>
+      <input id="apiKey" type="password" placeholder="AIza..." class="flex-1 rounded-lg border px-3 py-2" />
+      <button id="saveKey" class="rounded-lg bg-black text-white px-3 py-2">Save</button>
     </div>
   </details>
 
-  <div role="radiogroup" aria-label="Cognitive mode" class="grid grid-cols-3 gap-1 radius border border-app bg-surface p-1 shadow-card" id="modes"></div>
+  <div id="modes" class="grid grid-cols-3 gap-1 p-1 border rounded-xl bg-white mb-5"></div>
 
-  <section id="captureSection" class="mt-5 space-y-3">
-    <div id="frame" class="relative aspect-[4/5] overflow-hidden rounded-3xl border border-app bg-surface shadow-card">
-      <video id="video" playsinline muted class="hidden absolute inset-0 w-full h-full object-cover"></video>
-      <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover" alt="Captured scene" />
-      <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-          <svg viewBox="0 0 24 24" class="w-8 h-8 text-muted-fg" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h3l2-3h8l2 3h3v12H3z" stroke-linejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
-        </div>
-        <p class="text-sm text-muted-fg max-w-xs">Point your camera at the space. Frames stay in memory only.</p>
-        <p id="capError" class="text-xs text-warn hidden"></p>
-      </div>
-      <div id="liveBadge" class="hidden absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white">
-        <span class="w-1.5 h-1.5 rounded-full bg-red-400 anim-pulse"></span> live · in-memory only
-      </div>
-      <div id="loadingOverlay" class="hidden absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center">
-        <div class="rounded-full bg-surface px-4 py-2 text-xs font-semibold text-fg shadow-float">Interpreting scene…</div>
-      </div>
-    </div>
-    <div id="actions" class="grid grid-cols-2 gap-2">
-      <button id="openCam" class="radius bg-fg text-bg py-3 text-sm font-semibold" style="background:var(--fg);color:var(--bg)">Open camera</button>
-      <button id="uploadBtn" class="radius border border-app bg-surface py-3 text-sm font-semibold">Upload image</button>
-      <input id="fileInput" type="file" accept="image/*" class="hidden" />
-    </div>
-    <button id="snap" class="hidden w-full radius bg-accent text-accent-fg py-3 text-sm font-semibold">Capture frame</button>
-    <button id="reset" class="hidden w-full radius border border-app bg-surface py-2.5 text-sm font-semibold">New scene</button>
-  </section>
+  <div id="frame" class="relative aspect-[4/5] overflow-hidden rounded-3xl border bg-gray-100">
+    <video id="video" playsinline muted class="hidden absolute inset-0 w-full h-full object-cover"></video>
+    <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover" />
+    <div id="loadingOverlay" class="hidden absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-white font-bold">Interpreting…</div>
+  </div>
 
-  <section id="results" class="mt-6"></section>
+  <div id="actions" class="mt-4 grid grid-cols-2 gap-2">
+    <button id="openCam" class="rounded-xl bg-black text-white py-3">Open Camera</button>
+    <button id="uploadBtn" class="rounded-xl border py-3">Upload Image</button>
+    <input id="fileInput" type="file" accept="image/*" class="hidden" />
+  </div>
+  <button id="snap" class="hidden mt-4 w-full rounded-xl bg-red-600 text-white py-3">Capture Frame</button>
+  <button id="reset" class="hidden mt-4 w-full rounded-xl border py-3">New Scene</button>
 
-  <footer class="mt-10 text-center text-[10px] uppercase tracking-[.18em] text-muted-fg">
-    Zero-retention · Vision by JuneVerse
-  </footer>
+  <div id="results" class="mt-6 space-y-4"></div>
 </main>
 
 <script>
-const MODES = [
-  {id:"standard",label:"Standard",hint:"Calm overview"},
-  {id:"urgent",label:"Urgent",hint:"Blunt directives"},
-  {id:"accessibility",label:"Access",hint:"Tactile + safety"},
-];
-const SUBTITLES = {
-  standard:"What if the world could explain itself?",
-  urgent:"Blunt directives. Bypass panic.",
-  accessibility:"Surfaces, hazards, and structural assists.",
-};
-const SYSTEM_PROMPT = `You are EchoLens, an advanced human-centered environmental interpretation layer. Your purpose is to reduce cognitive load and spatial anxiety for individuals navigating complex or unfamiliar spaces.
-
-CRITICAL INSTRUCTIONS:
-1. Do NOT return raw, dry lists of objects.
-2. Do NOT use overly flowery language. Be warm, empathetic, direct.
-3. Classify the environment, identify navigation cues, anchor instructions to unmistakable physical landmarks, provide clear pathway choices.
-4. Adapt strictly to the user's 'cognitive_mode'.
-5. SAFETY: If a road/street separates the user from the primary landmark, explicitly evaluate pedestrian crossing safety in 'safety_warning' — warn about traffic, missing audio-walk signals, un-signaled curbs. Empty string if no crossing risk.
-
-Respond STRICTLY in valid JSON matching:
-{
- "environment_type": string,
- "primary_landmark": string,
- "situational_summary": string,
- "navigation_cues": string[],
- "pathway_options": [{"path_id": number, "direction": string, "destination_hint": string}],
- "accessibility_notes": string,
- "safety_warning": string
-}`;
-const MODE_DIRECTIVE = {
-  urgent:"MODE=HIGH_STRESS_URGENT. Strip prose. Blunt, single-clause, imperative. Max 8 words per direction. summary ≤12 words.",
-  accessibility:"MODE=ACCESSIBILITY. Emphasize tactile cues, surface transitions, overhead hazards, ramps, elevators, handrails. accessibility_notes is most important.",
-  standard:"MODE=STANDARD. Balanced, calm, 1–2 sentences per descriptive field.",
-};
-
-let mode = "standard";
-let stream = null;
-let loading = false;
-
 const $ = (id) => document.getElementById(id);
+const KEY_STORAGE = "echolens_gemini_key";
+let mode = "standard";
 
-// Mode selector
-const modesEl = $("modes");
-function renderModes(){
-  modesEl.innerHTML = MODES.map(m => `
-    <button data-mode="${m.id}" role="radio" aria-checked="${m.id===mode}"
-      class="flex flex-col items-start radius px-3 py-2 text-left transition ${m.id===mode?'bg-accent text-accent-fg shadow-card':'text-muted-fg hover:bg-muted'}">
-      <span class="text-sm font-semibold leading-tight">${m.label}</span>
-      <span class="text-[10px] opacity-80 leading-tight">${m.hint}</span>
-    </button>`).join("");
-  modesEl.querySelectorAll("button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+// --- API Logic ---
+async function interpret(base64Image, mimeType) {
+  const apiKey = localStorage.getItem(KEY_STORAGE);
+  if (!apiKey) { alert("Please save your API key first!"); return; }
+  
+  $("loadingOverlay").classList.remove("hidden");
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { text: `Analyze this image as EchoLens. Mode: ${mode}. Return JSON: { "environment_type": "", "situational_summary": "", "primary_landmark": "", "accessibility_notes": "", "safety_warning": "" }` },
+          { inline_data: { mime_type: mimeType, data: base64Image } }
+        ]}]
+      })
+    });
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const json = JSON.parse(text.replace(/```json|```/g, ""));
+    renderResults(json);
+  } catch (e) { alert("Error: " + e.message); } 
+  finally { $("loadingOverlay").classList.add("hidden"); }
 }
-function setMode(m){
-  mode = m;
-  document.documentElement.classList.remove("mode-urgent","mode-a11y");
-  if(m==="urgent") document.documentElement.classList.add("mode-urgent");
-  if(m==="accessibility") document.documentElement.classList.add("mode-a11y");
-  $("subtitle").textContent = SUBTITLES[m];
-  renderModes();
-}
-renderModes();
 
-// API key persistence
-const KEY = "echolens_gemini_key";
-$("apiKey").value = localStorage.getItem(KEY) || "";
-updateKeyState();
-function updateKeyState(){
-  $("keyState").textContent = localStorage.getItem(KEY) ? "· saved" : "· not set";
+function renderResults(d) {
+  $("results").innerHTML = `
+    <div class="p-4 rounded-2xl bg-white border shadow-sm">
+      <h2 class="font-bold text-lg">${d.environment_type}</h2>
+      <p class="text-sm mt-2">${d.situational_summary}</p>
+      <p class="text-xs mt-3 text-gray-500"><strong>Landmark:</strong> ${d.primary_landmark}</p>
+      ${d.safety_warning ? `<div class="mt-3 p-2 bg-red-50 text-red-700 text-xs rounded">⚠️ ${d.safety_warning}</div>` : ""}
+    </div>`;
 }
+
+// --- UI Helpers ---
 $("saveKey").onclick = () => {
-  const v = $("apiKey").value.trim();
-  if(v){ localStorage.setItem(KEY,v); } else { localStorage.removeItem(KEY); }
-  updateKeyState();
+  localStorage.setItem(KEY_STORAGE, $("apiKey").value.trim());
+  $("keyState").textContent = " (Saved)";
   $("keyBox").open = false;
 };
 
-// Camera
 $("openCam").onclick = async () => {
-  $("capError").classList.add("hidden");
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
-    const v = $("video"); v.srcObject = stream; await v.play();
-    v.classList.remove("hidden");
-    $("placeholder").classList.add("hidden");
-    $("liveBadge").classList.remove("hidden");
-    $("actions").classList.add("hidden");
-    $("snap").classList.remove("hidden");
-  }catch(e){
-    console.error(e);
-    $("capError").textContent = "Camera unavailable. Use upload instead.";
-    $("capError").classList.remove("hidden");
-  }
+  const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  $("video").srcObject = stream;
+  $("video").classList.remove("hidden");
+  $("openCam").classList.add("hidden");
+  $("snap").classList.remove("hidden");
 };
-$("snap").onclick = () => {
-  const v = $("video"); if(!v.videoWidth) return;
-  const c = document.createElement("canvas");
-  const scale = Math.min(1, 1280/v.videoWidth);
-  c.width = Math.round(v.videoWidth*scale); c.height = Math.round(v.videoHeight*scale);
-  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
-  const dataUrl = c.toDataURL("image/jpeg",0.85);
-  stopStream();
-  showPreview(dataUrl);
-  interpret(dataUrl.split(",")[1], "image/jpeg");
-};
-function stopStream(){
-  stream?.getTracks().forEach(t=>t.stop()); stream=null;
-  $("video").classList.add("hidden"); $("liveBadge").classList.add("hidden");
-  $("snap").classList.add("hidden");
-}
 
-// Upload
+$("snap").onclick = () => {
+  const c = document.createElement("canvas");
+  c.width = $("video").videoWidth; c.height = $("video").videoHeight;
+  c.getContext("2d").drawImage($("video"), 0, 0);
+  const data = c.toDataURL("image/jpeg").split(",")[1];
+  $("preview").src = c.toDataURL("image/jpeg");
+  $("preview").classList.remove("hidden");
+  $("video").classList.add("hidden");
+  $("snap").classList.add("hidden");
+  $("reset").classList.remove("hidden");
+  interpret(data, "image/jpeg");
+};
+
 $("uploadBtn").onclick = () => $("fileInput").click();
 $("fileInput").onchange = (e) => {
-  const f = e.target.files?.[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const url = String(r.result||"");
-    showPreview(url);
-    interpret(url.split(",")[1], f.type||"image/jpeg");
-    e.target.value = "";
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const data = ev.target.result.split(",")[1];
+    $("preview").src = ev.target.result;
+    $("preview").classList.remove("hidden");
+    $("reset").classList.remove("hidden");
+    $("actions").classList.add("hidden");
+    interpret(data, "image/jpeg");
   };
-  r.readAsDataURL(f);
+  reader.readAsDataURL(e.target.files[0]);
 };
 
-function showPreview(dataUrl){
-  $("preview").src = dataUrl;
-  $("preview").classList.remove("hidden");
-  $("placeholder").classList.add("hidden");
-  $("actions").classList.add("hidden");
-  $("reset").classList.remove("hidden");
-}
-$("reset").onclick = () => {
-  $("preview").src = ""; $("preview").classList.add("hidden");
-  $("placeholder").classList.remove("hidden");
-  $("actions").classList.remove("hidden");
-  $("reset").classList.add("hidden");
-  $("results").innerHTML = "";
-};
-
-function setLoading(b){
-  loading = b;
-  $("loadingOverlay").classList.toggle("hidden",!b);
-  if(b) $("results").innerHTML = skeletonHTML();
-}
-
-function skeletonHTML(){
-  return `<div class="space-y-3">
-    <div class="skeleton h-7 w-32 rounded-full"></div>
-    <div class="skeleton h-28 rounded-2xl"></div>
-    <div class="skeleton h-20 rounded-2xl"></div>
-    <div class="skeleton h-24 rounded-2xl"></div>
-    <div class="skeleton h-24 rounded-2xl"></div>
-  </div>`;
-}
-
-function extractJson(s){
-  s = s.trim();
-  const f = s.match(/^
-http://googleusercontent.com/immersive_entry_chip/0
+$("reset").onclick = () => location.reload();
+</script>
+</body>
+</html>
