@@ -3,352 +3,663 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>EchoLens — environments that explain themselves</title>
-<meta name="description" content="An AI environmental interpretation layer for unfamiliar spaces." />
-<script src="https://cdn.tailwindcss.com"></script>
+<title>EchoLens — Spaces that explain themselves · by JuneVerse</title>
+<meta name="description" content="Point your camera at any unfamiliar space. EchoLens names the anchor, draws the paths, and warns about what could trip you up." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#faf8f3; --fg:#221c14; --surface:#ffffff; --muted:#f1ede4;
-    --muted-fg:#6b6356; --border:#e7e1d4; --accent:#c2553a; --accent-fg:#fff;
-    --anchor:#1f4c6b; --anchor-fg:#fff; --warn:#c8472a; --radius:1rem;
+    --radius:1rem;
+    --bg:#faf7f1; --fg:#1c1814; --surface:#ffffff; --muted:#f0ebe2;
+    --muted-fg:#6b6155; --border:#e3dccf; --accent:#c2613a; --accent-fg:#fffaf3;
+    --anchor:#1b3a6b; --anchor-fg:#f5f9ff; --warn:#c84a2c; --warn-fg:#fff;
+    --shadow-card:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(0,0,0,.12);
+    --shadow-float:0 2px 0 rgba(0,0,0,.04),0 24px 48px -20px rgba(0,0,0,.18);
+    --font-display:"Instrument Serif", ui-serif, Georgia, serif;
+    --font-sans:"Inter", ui-sans-serif, system-ui, sans-serif;
   }
   html.mode-urgent{
-    --bg:#15110c; --fg:#fff; --surface:#1d1810; --muted:#2a2418;
-    --muted-fg:#e8e2d0; --border:rgba(255,255,255,.18);
-    --accent:#ffcc33; --accent-fg:#15110c; --anchor:#ffcc33; --anchor-fg:#15110c;
-    --warn:#ff5530; --radius:.25rem;
+    --radius:.35rem;
+    --bg:#141210; --fg:#ffffff; --surface:#1d1a17; --muted:#262320;
+    --muted-fg:#e8e4dd; --border:rgba(255,255,255,.18);
+    --accent:#ffd23a; --accent-fg:#141210; --anchor:#ffd23a; --anchor-fg:#141210;
+    --warn:#ff5a3c; --warn-fg:#fff;
   }
   html.mode-a11y{
-    --bg:#fff; --fg:#080808; --surface:#fff; --muted:#eee;
-    --muted-fg:#363636; --border:#1a1a1a;
-    --accent:#1c3fb8; --accent-fg:#fff; --anchor:#0f2a78; --anchor-fg:#fff;
-    --warn:#a8281a; --radius:1.25rem;
+    --radius:1.25rem;
+    --bg:#ffffff; --fg:#070707; --surface:#ffffff; --muted:#eef0f4;
+    --muted-fg:#3a3a3a; --border:#0a0a0a; --accent:#1e3a8a; --accent-fg:#ffffff;
+    --anchor:#0f1f55; --anchor-fg:#ffffff; --warn:#a8201a; --warn-fg:#fff;
   }
-  html,body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  .font-display{font-family:'Instrument Serif',Georgia,serif;letter-spacing:-.01em}
+  *{box-sizing:border-box;border-color:var(--border)}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-sans);-webkit-font-smoothing:antialiased}
   html.mode-a11y body{font-size:17px}
   html.mode-urgent body{font-weight:600;letter-spacing:-.01em}
-  .bg-surface{background:var(--surface)} .bg-muted{background:var(--muted)}
-  .bg-accent{background:var(--accent)} .text-accent{color:var(--accent)}
-  .text-accent-fg{color:var(--accent-fg)} .bg-anchor{background:var(--anchor)}
-  .text-anchor-fg{color:var(--anchor-fg)} .text-muted-fg{color:var(--muted-fg)}
-  .text-fg{color:var(--fg)} .border-app{border-color:var(--border)}
-  .border-warn{border-color:var(--warn)} .bg-warn-soft{background:color-mix(in oklab,var(--warn) 12%,transparent)}
-  .text-warn{color:var(--warn)} .ring-accent{box-shadow:0 0 0 2px var(--accent)}
-  .shadow-card{box-shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(0,0,0,.12)}
-  .shadow-float{box-shadow:0 2px 0 rgba(0,0,0,.04),0 24px 48px -20px rgba(0,0,0,.18)}
-  .radius{border-radius:var(--radius)}
-  @keyframes pulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
-  .anim-pulse{animation:pulse 1.6s ease-in-out infinite}
+  a{color:inherit}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  .font-display{font-family:var(--font-display);letter-spacing:-.01em}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 16px 80px}
+  @media(min-width:640px){.wrap{padding:32px 24px 96px}}
+
+  /* nav */
+  nav.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .logo{width:34px;height:34px;border-radius:12px;background:var(--fg);color:var(--bg);display:grid;place-items:center;font-family:var(--font-display);font-size:20px}
+  .brand .name{font-weight:600;font-size:14px;line-height:1.1}
+  .brand .by{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted-fg);margin-top:2px}
+  .nav-links{display:none;gap:18px;align-items:center;font-size:12px;color:var(--muted-fg)}
+  .nav-links a:hover{color:var(--fg)}
+  .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 10px}
+  .pill .dot{width:6px;height:6px;border-radius:999px;background:var(--accent);animation:pulse 1.6s ease-in-out infinite}
+  @media(min-width:640px){.nav-links{display:flex}}
+
+  /* hero grid */
+  .grid{display:grid;gap:32px}
+  @media(min-width:1024px){.grid{grid-template-columns:1.05fr 1fr;gap:48px}}
+
+  /* hero */
+  .tag{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:var(--muted-fg)}
+  .tag .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  h1.hero{font-family:var(--font-display);font-size:clamp(40px,7vw,68px);line-height:1.02;margin:16px 0 0;font-weight:400}
+  h1.hero em{font-style:italic;color:var(--accent)}
+  .lede{margin:16px 0 0;max-width:480px;color:var(--muted-fg);font-size:16px}
+  html.mode-urgent .lede{color:var(--fg);font-weight:600}
+  .cta-row{margin-top:24px;display:flex;flex-wrap:wrap;gap:8px}
+  .btn{border-radius:16px;padding:12px 20px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:transform .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-primary{background:var(--fg);color:var(--bg)}
+  .btn-secondary{background:var(--surface);color:var(--fg);border:1px solid var(--border)}
+  .btn-accent{background:var(--accent);color:var(--accent-fg)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .warnline{margin-top:10px;font-size:12px;color:var(--warn)}
+
+  /* capability grid */
+  .caps{margin-top:32px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .cap{border:1px solid var(--border);background:var(--surface);border-radius:18px;padding:16px;box-shadow:var(--shadow-card);transition:transform .2s,box-shadow .2s}
+  .cap:hover{transform:translateY(-2px);box-shadow:var(--shadow-float)}
+  .cap .ico{font-size:22px}
+  .cap h3{margin:8px 0 4px;font-size:14px;font-weight:600}
+  .cap p{margin:0;font-size:12px;color:var(--muted-fg);line-height:1.5}
+
+  /* how it works */
+  .how{margin-top:32px;border:1px solid var(--border);background:var(--surface);border-radius:24px;padding:20px;box-shadow:var(--shadow-card)}
+  .how .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.18em;color:var(--muted-fg)}
+  .steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+  @media(min-width:640px){.steps{grid-template-columns:repeat(3,1fr)}}
+  .step{background:var(--muted);border-radius:16px;padding:12px}
+  .step .n{font-family:var(--font-display);font-size:24px;color:var(--accent)}
+  .step .t{font-size:14px;font-weight:600;margin-top:4px}
+  .step .d{font-size:12px;color:var(--muted-fg)}
+
+  /* right panel */
+  .panel{border:1px solid var(--border);background:color-mix(in srgb, var(--surface) 92%, transparent);border-radius:24px;padding:20px;box-shadow:var(--shadow-card);backdrop-filter:blur(8px)}
+  @media(min-width:1024px){.panel-wrap{position:sticky;top:24px}}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .panel-head .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.18em;color:var(--muted-fg)}
+  .panel-head .mode{font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted-fg)}
+
+  /* mode selector */
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:4px;box-shadow:var(--shadow-card)}
+  .modes button{display:flex;flex-direction:column;align-items:flex-start;border-radius:14px;padding:8px 12px;text-align:left;color:var(--muted-fg);transition:background .15s}
+  .modes button.active{background:var(--accent);color:var(--accent-fg);box-shadow:var(--shadow-card)}
+  .modes button:not(.active):hover{background:var(--muted)}
+  .modes .lab{font-size:13px;font-weight:600;line-height:1.1}
+  .modes .hint{font-size:10px;opacity:.8;line-height:1.1;margin-top:2px}
+
+  /* capture */
+  .frame{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:24px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-card);margin-top:20px}
+  .frame video, .frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .frame .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center}
+  .frame .placeholder .iconbox{width:64px;height:64px;border-radius:999px;background:var(--muted);display:grid;place-items:center;color:var(--muted-fg)}
+  .frame .placeholder p{font-size:13px;color:var(--muted-fg);max-width:300px;margin:0}
+  .frame .livebox{position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:500;backdrop-filter:blur(4px)}
+  .frame .livebox .dot{width:6px;height:6px;border-radius:999px;background:#ff6b6b;animation:pulse 1.6s ease-in-out infinite}
+  .frame .crop{position:absolute;inset:16px;border:2px solid rgba(255,255,255,.7);border-radius:18px;pointer-events:none;mix-blend-mode:difference}
+  .frame .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);backdrop-filter:blur(4px)}
+  .frame .loading .chip{background:var(--surface);color:var(--fg);border-radius:999px;padding:8px 16px;font-size:12px;font-weight:600;box-shadow:var(--shadow-float)}
+
+  .cap-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .cap-buttons button{border-radius:16px;padding:12px;font-size:13px;font-weight:600}
+
+  /* result */
+  .result{display:flex;flex-direction:column;gap:16px;margin-top:20px}
+  .envtag{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--muted-fg);box-shadow:var(--shadow-card);width:fit-content}
+  .envtag .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  .anchor{border-radius:24px;background:var(--anchor);color:var(--anchor-fg);padding:20px;box-shadow:var(--shadow-float)}
+  .anchor .label{font-size:11px;text-transform:uppercase;letter-spacing:.16em;opacity:.8}
+  .anchor h2{margin:4px 0 0;font-family:var(--font-display);font-size:26px;line-height:1.15;font-weight:400}
+  .anchor p{margin:12px 0 0;font-size:14px;line-height:1.55;opacity:.95}
+  html.mode-urgent .anchor h2{font-size:32px}
+  html.mode-urgent .anchor p{font-size:16px;font-weight:600;opacity:1}
+
+  .warn{border:2px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:18px;padding:16px}
+  .warn .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:var(--warn)}
+  .warn p{margin:4px 0 0;font-size:14px;font-weight:500}
+
+  .section-label{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted-fg);padding:0 4px;margin:0 0 8px}
+  .paths{display:flex;flex-direction:column;gap:8px}
+  .path{display:flex;gap:12px;border:1px solid var(--border);background:var(--surface);border-radius:18px;padding:14px;box-shadow:var(--shadow-card);transition:transform .15s,box-shadow .15s}
+  .path:hover{transform:translateY(-2px);box-shadow:var(--shadow-float)}
+  .path .num{width:40px;height:40px;flex-shrink:0;display:grid;place-items:center;border-radius:12px;background:var(--accent);color:var(--accent-fg);font-family:var(--font-display);font-size:18px;font-weight:600}
+  .path .dir{font-size:14px;font-weight:600}
+  .path .hint{font-size:12px;color:var(--muted-fg);margin-top:2px}
+
+  .cues{display:flex;flex-wrap:wrap;gap:6px}
+  .cue{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px}
+
+  .a11ybox{border:1px solid var(--border);background:var(--muted);border-radius:18px;padding:16px}
+  .a11ybox .label{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted-fg)}
+  .a11ybox p{margin:4px 0 0;font-size:14px;line-height:1.55}
+  html.mode-a11y .a11ybox p{font-size:16px}
+
+  .empty{border:1px dashed var(--border);border-radius:18px;padding:20px;text-align:center;font-size:12px;color:var(--muted-fg)}
+  .errbox{border:2px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);border-radius:18px;padding:16px;font-size:14px}
+
+  /* skeleton */
+  .sk{background:linear-gradient(90deg,var(--muted) 0%,color-mix(in srgb,var(--muted) 60%,var(--bg)) 50%,var(--muted) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:14px}
   @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-  .skeleton{background:linear-gradient(90deg,var(--muted) 0%,color-mix(in oklab,var(--muted) 60%,var(--bg)) 50%,var(--muted) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+  @keyframes pulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+
+  footer{margin-top:64px;text-align:center;color:var(--muted-fg);font-size:10px;letter-spacing:.18em;text-transform:uppercase;display:flex;flex-direction:column;gap:4px}
+
+  /* key modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:100;backdrop-filter:blur(6px)}
+  .modal.open{display:flex}
+  .modal .card{background:var(--surface);color:var(--fg);border-radius:24px;padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow-float)}
+  .modal h3{margin:0 0 4px;font-family:var(--font-display);font-size:24px;font-weight:400}
+  .modal p{margin:0 0 16px;font-size:13px;color:var(--muted-fg);line-height:1.55}
+  .modal input{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--fg);font:inherit;font-size:14px}
+  .modal input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .modal .actions{display:flex;gap:8px;margin-top:16px}
+  .modal .actions button{flex:1;padding:12px;border-radius:14px;font-size:13px;font-weight:600}
 </style>
 </head>
 <body>
-<main class="mx-auto w-full max-w-md sm:max-w-lg px-4 pt-8 pb-16 min-h-screen">
-
-  <header class="mb-6">
-    <div class="flex items-center gap-2">
-      <span class="inline-block w-2.5 h-2.5 rounded-full bg-accent anim-pulse"></span>
-      <span class="text-[11px] font-semibold uppercase tracking-[.18em] text-muted-fg">EchoLens</span>
+<main class="wrap">
+  <nav class="top">
+    <div class="brand">
+      <div class="logo">E</div>
+      <div>
+        <div class="name">EchoLens</div>
+        <div class="by">by JuneVerse</div>
+      </div>
     </div>
-    <h1 class="mt-2 font-display text-4xl leading-[1.05]">
-      Spaces that<br><span class="italic text-accent">explain themselves.</span>
-    </h1>
-    <p id="subtitle" class="mt-2 text-sm text-muted-fg">What if the world could explain itself?</p>
-  </header>
-
-  <!-- API key -->
-  <details id="keyBox" class="mb-4 radius border border-app bg-surface shadow-card p-3 text-sm">
-    <summary class="cursor-pointer font-semibold">Gemini API key <span id="keyState" class="text-muted-fg font-normal"></span></summary>
-    <p class="mt-2 text-xs text-muted-fg">Get a free key at <a class="underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Stored only in your browser.</p>
-    <div class="mt-2 flex gap-2">
-      <input id="apiKey" type="password" placeholder="AIza..." class="flex-1 rounded-lg border border-app bg-bg px-3 py-2 text-sm" />
-      <button id="saveKey" class="rounded-lg bg-accent text-accent-fg px-3 py-2 text-sm font-semibold">Save</button>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#capture">Try it</a>
+      <button id="keyBtn" class="pill" style="cursor:pointer">⚙️ API key</button>
+      <span class="pill"><span class="dot"></span>Live vision</span>
     </div>
-  </details>
+  </nav>
 
-  <!-- Mode selector -->
-  <div role="radiogroup" aria-label="Cognitive mode" class="grid grid-cols-3 gap-1 radius border border-app bg-surface p-1 shadow-card" id="modes"></div>
+  <div class="grid">
+    <!-- LEFT -->
+    <section>
+      <span class="tag"><span class="dot"></span>Environmental interpretation layer</span>
+      <h1 class="hero">Spaces that<br><em>explain themselves.</em></h1>
+      <p class="lede" id="lede">What if the world could explain itself? Point your camera at a hospital lobby, a metro junction, or any unfamiliar space — EchoLens names the anchor, draws the paths, and warns about what could trip you up.</p>
 
-  <!-- Capture / preview -->
-  <section id="captureSection" class="mt-5 space-y-3">
-    <div id="frame" class="relative aspect-[4/5] overflow-hidden rounded-3xl border border-app bg-surface shadow-card">
-      <video id="video" playsinline muted class="hidden absolute inset-0 w-full h-full object-cover"></video>
-      <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover" alt="Captured scene" />
-      <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-          <svg viewBox="0 0 24 24" class="w-8 h-8 text-muted-fg" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h3l2-3h8l2 3h3v12H3z" stroke-linejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
+      <div class="cta-row">
+        <a href="#capture" class="btn btn-primary">Interpret a scene</a>
+        <button id="permBtn" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h3l2-3h8l2 3h3v12H3z" stroke-linejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
+          <span id="permLabel">Allow camera</span>
+        </button>
+      </div>
+      <p id="permWarn" class="warnline" style="display:none">Camera permission is blocked. Enable it in your browser site settings, or use Upload below.</p>
+
+      <div class="caps">
+        <div class="cap"><div class="ico">📍</div><h3>Orientation anchors</h3><p>Pins the one unmistakable landmark your eyes can lock onto.</p></div>
+        <div class="cap"><div class="ico">🛣️</div><h3>Pathway options</h3><p>Numbered routes with direction + destination — no map required.</p></div>
+        <div class="cap"><div class="ico">⚠️</div><h3>Crossing safety</h3><p>Flags unsafe roads, missing audio signals, blind curb drops.</p></div>
+        <div class="cap"><div class="ico">♿</div><h3>Tactile cues</h3><p>Surface transitions, ramps, handrails — surfaced for low-vision.</p></div>
+      </div>
+
+      <div id="how" class="how">
+        <div class="label">How it works</div>
+        <ol class="steps">
+          <li class="step"><div class="n">01</div><div class="t">Capture or upload</div><div class="d">Camera frame or photo of the space.</div></li>
+          <li class="step"><div class="n">02</div><div class="t">We interpret</div><div class="d">Landmarks, paths, hazards — in seconds.</div></li>
+          <li class="step"><div class="n">03</div><div class="t">You move</div><div class="d">Calm directives matched to your mode.</div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section id="capture" class="panel-wrap">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="label">Cognitive mode</div>
+          <div class="mode" id="modeLabel">standard</div>
         </div>
-        <p class="text-sm text-muted-fg max-w-xs">Point your camera at the space. Frames stay in memory only.</p>
-        <p id="capError" class="text-xs text-warn hidden"></p>
-      </div>
-      <div id="liveBadge" class="hidden absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white">
-        <span class="w-1.5 h-1.5 rounded-full bg-red-400 anim-pulse"></span> live · in-memory only
-      </div>
-      <div id="loadingOverlay" class="hidden absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center">
-        <div class="rounded-full bg-surface px-4 py-2 text-xs font-semibold text-fg shadow-float">Interpreting scene…</div>
-      </div>
-    </div>
-    <div id="actions" class="grid grid-cols-2 gap-2">
-      <button id="openCam" class="radius bg-fg text-bg py-3 text-sm font-semibold" style="background:var(--fg);color:var(--bg)">Open camera</button>
-      <button id="uploadBtn" class="radius border border-app bg-surface py-3 text-sm font-semibold">Upload image</button>
-      <input id="fileInput" type="file" accept="image/*" class="hidden" />
-    </div>
-    <button id="snap" class="hidden w-full radius bg-accent text-accent-fg py-3 text-sm font-semibold">Capture frame</button>
-    <button id="reset" class="hidden w-full radius border border-app bg-surface py-2.5 text-sm font-semibold">New scene</button>
-  </section>
+        <div class="modes" role="radiogroup" aria-label="Cognitive mode">
+          <button class="active" data-mode="standard"><span class="lab">Standard</span><span class="hint">Calm overview</span></button>
+          <button data-mode="urgent"><span class="lab">Urgent</span><span class="hint">Blunt directives</span></button>
+          <button data-mode="accessibility"><span class="lab">Access</span><span class="hint">Tactile + safety</span></button>
+        </div>
 
-  <!-- Results -->
-  <section id="results" class="mt-6"></section>
+        <!-- Capture frame -->
+        <div class="frame" id="frame">
+          <video id="video" playsinline muted style="display:none"></video>
+          <img id="preview" alt="Captured scene" style="display:none"/>
+          <div class="placeholder" id="placeholder">
+            <div class="iconbox">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h3l2-3h8l2 3h3v12H3z" stroke-linejoin="round"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+            <p>Point your camera at the space. Nothing is stored — frames stay in memory only.</p>
+            <p id="frameErr" style="color:var(--warn);font-size:12px;display:none"></p>
+          </div>
+          <div class="livebox" id="liveBox" style="display:none"><span class="dot"></span>live · in-memory only</div>
+          <div class="crop" id="crop" style="display:none"></div>
+          <div class="loading" id="loading" style="display:none"><div class="chip">Interpreting scene…</div></div>
+        </div>
 
-  <footer class="mt-10 text-center text-[10px] uppercase tracking-[.18em] text-muted-fg">
-    Zero-retention · Vision by Google Gemini
+        <div class="cap-buttons" id="capButtons">
+          <button id="cameraBtn" class="btn-primary" style="background:var(--fg);color:var(--bg)">Open camera</button>
+          <button id="uploadBtn" class="btn-secondary" style="background:var(--surface);color:var(--fg);border:1px solid var(--border)">Upload image</button>
+          <input id="fileInput" type="file" accept="image/*" style="display:none"/>
+        </div>
+
+        <div id="resultArea" style="margin-top:20px">
+          <div class="empty">Capture a frame or upload an image to begin.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div>EchoLens · Vision by JuneVerse</div>
+    <div style="opacity:.7">© <span id="year"></span> JuneVerse Labs</div>
   </footer>
 </main>
 
+<!-- API key modal -->
+<div class="modal" id="keyModal">
+  <div class="card">
+    <h3>Add your Gemini API key</h3>
+    <p>EchoLens uses Google Gemini for vision. Your key is stored only in this browser's localStorage and sent directly to Google — never to us. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">aistudio.google.com/apikey</a>.</p>
+    <input id="keyInput" type="password" placeholder="AIza..." autocomplete="off"/>
+    <div class="actions">
+      <button id="keyCancel" class="btn-secondary" style="background:var(--surface);color:var(--fg);border:1px solid var(--border)">Cancel</button>
+      <button id="keySave" class="btn-primary" style="background:var(--fg);color:var(--bg)">Save key</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const MODES = [
-  {id:"standard",label:"Standard",hint:"Calm overview"},
-  {id:"urgent",label:"Urgent",hint:"Blunt directives"},
-  {id:"accessibility",label:"Access",hint:"Tactile + safety"},
-];
-const SUBTITLES = {
-  standard:"What if the world could explain itself?",
-  urgent:"Blunt directives. Bypass panic.",
-  accessibility:"Surfaces, hazards, and structural assists.",
-};
-const SYSTEM_PROMPT = `You are EchoLens, an advanced human-centered environmental interpretation layer. Your purpose is to reduce cognitive load and spatial anxiety for individuals navigating complex or unfamiliar spaces.
+(() => {
+  const $ = (id) => document.getElementById(id);
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  let mode = "standard";
+  let stream = null;
+  let cameraActive = false;
+  let loading = false;
+
+  // ---- MODE SWITCHING ----
+  const modeBtns = document.querySelectorAll(".modes button");
+  modeBtns.forEach(b => b.addEventListener("click", () => {
+    mode = b.dataset.mode;
+    modeBtns.forEach(x => x.classList.toggle("active", x === b));
+    document.documentElement.classList.remove("mode-urgent","mode-a11y");
+    if(mode === "urgent") document.documentElement.classList.add("mode-urgent");
+    if(mode === "accessibility") document.documentElement.classList.add("mode-a11y");
+    $("modeLabel").textContent = mode;
+    const ledes = {
+      standard: "What if the world could explain itself? Point your camera at a hospital lobby, a metro junction, or any unfamiliar space — EchoLens names the anchor, draws the paths, and warns about what could trip you up.",
+      urgent: "Blunt directives. Bypass panic. Point. Capture. Move.",
+      accessibility: "Surfaces, hazards, and structural assists. Tactile cues and ramps prioritized for low-vision navigation."
+    };
+    $("lede").textContent = ledes[mode];
+  }));
+
+  // ---- API KEY ----
+  const KEY_STORAGE = "echolens_gemini_key";
+  function getKey(){ return localStorage.getItem(KEY_STORAGE) || ""; }
+  function ensureKey(){
+    if(!getKey()){ openKeyModal(); return false; }
+    return true;
+  }
+  function openKeyModal(){
+    $("keyInput").value = getKey();
+    $("keyModal").classList.add("open");
+    setTimeout(()=>$("keyInput").focus(),50);
+  }
+  function closeKeyModal(){ $("keyModal").classList.remove("open"); }
+  $("keyBtn").addEventListener("click", openKeyModal);
+  $("keyCancel").addEventListener("click", closeKeyModal);
+  $("keySave").addEventListener("click", () => {
+    const v = $("keyInput").value.trim();
+    if(v) localStorage.setItem(KEY_STORAGE, v);
+    closeKeyModal();
+  });
+
+  // ---- CAMERA PERMISSION PROBE ----
+  async function probePerm(){
+    try{
+      const s = await navigator.permissions.query({name:"camera"});
+      updatePerm(s.state);
+      s.onchange = () => updatePerm(s.state);
+    }catch(e){}
+  }
+  function updatePerm(state){
+    if(state === "granted"){ $("permLabel").textContent = "Camera ready"; $("permWarn").style.display="none"; }
+    else if(state === "denied"){ $("permLabel").textContent = "Camera blocked"; $("permWarn").style.display="block"; }
+    else { $("permLabel").textContent = "Allow camera"; $("permWarn").style.display="none"; }
+  }
+  $("permBtn").addEventListener("click", async () => {
+    try{
+      const s = await navigator.mediaDevices.getUserMedia({ video:{facingMode:{ideal:"environment"}}, audio:false });
+      s.getTracks().forEach(t => t.stop());
+      updatePerm("granted");
+    }catch(e){ updatePerm("denied"); }
+  });
+  probePerm();
+
+  // ---- CAMERA ----
+  async function startCamera(){
+    $("frameErr").style.display="none";
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:{ideal:"environment"}}, audio:false });
+      const v = $("video");
+      v.srcObject = stream;
+      await v.play();
+      v.style.display = "block";
+      $("placeholder").style.display = "none";
+      $("liveBox").style.display = "inline-flex";
+      $("crop").style.display = "block";
+      cameraActive = true;
+      renderCapButtons();
+      updatePerm("granted");
+    }catch(e){
+      $("frameErr").textContent = "Camera unavailable. Use upload instead.";
+      $("frameErr").style.display = "block";
+      updatePerm("denied");
+    }
+  }
+  function stopCamera(){
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    const v = $("video");
+    v.srcObject = null;
+    v.style.display = "none";
+    $("liveBox").style.display = "none";
+    $("crop").style.display = "none";
+    cameraActive = false;
+  }
+  function snap(){
+    if(!ensureKey()) return;
+    const v = $("video");
+    if(!v.videoWidth) return;
+    const c = document.createElement("canvas");
+    const maxW = 1280;
+    const scale = Math.min(1, maxW / v.videoWidth);
+    c.width = Math.round(v.videoWidth * scale);
+    c.height = Math.round(v.videoHeight * scale);
+    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    const dataUrl = c.toDataURL("image/jpeg", 0.85);
+    stopCamera();
+    showPreview(dataUrl);
+    interpret(dataUrl.split(",")[1], "image/jpeg");
+  }
+
+  function showPreview(dataUrl){
+    $("placeholder").style.display = "none";
+    $("preview").src = dataUrl;
+    $("preview").style.display = "block";
+    renderCapButtons();
+  }
+  function resetScene(){
+    stopCamera();
+    $("preview").style.display = "none";
+    $("preview").src = "";
+    $("placeholder").style.display = "flex";
+    $("loading").style.display = "none";
+    renderResult(null);
+    renderCapButtons();
+  }
+  function renderCapButtons(){
+    const c = $("capButtons");
+    c.innerHTML = "";
+    const havePreview = !!$("preview").src;
+    if(havePreview){
+      const btn = document.createElement("button");
+      btn.textContent = "New scene";
+      btn.style.gridColumn = "span 2";
+      btn.style.background = "var(--surface)";
+      btn.style.color = "var(--fg)";
+      btn.style.border = "1px solid var(--border)";
+      btn.style.borderRadius = "16px";
+      btn.style.padding = "12px";
+      btn.style.fontWeight = "600";
+      btn.disabled = loading;
+      btn.onclick = resetScene;
+      c.appendChild(btn);
+    } else if(cameraActive){
+      const snapBtn = document.createElement("button");
+      snapBtn.textContent = "Capture frame";
+      snapBtn.style.background = "var(--accent)";
+      snapBtn.style.color = "var(--accent-fg)";
+      snapBtn.style.borderRadius = "16px";
+      snapBtn.style.padding = "12px";
+      snapBtn.style.fontWeight = "600";
+      snapBtn.onclick = snap;
+      const stopBtn = document.createElement("button");
+      stopBtn.textContent = "Cancel";
+      stopBtn.style.background = "var(--surface)";
+      stopBtn.style.color = "var(--fg)";
+      stopBtn.style.border = "1px solid var(--border)";
+      stopBtn.style.borderRadius = "16px";
+      stopBtn.style.padding = "12px";
+      stopBtn.style.fontWeight = "600";
+      stopBtn.onclick = stopCamera;
+      c.appendChild(snapBtn); c.appendChild(stopBtn);
+      // also re-render after stopCamera via timeout? simpler: stopBtn calls stop then renderCapButtons
+      stopBtn.onclick = () => { stopCamera(); renderCapButtons(); };
+    } else {
+      const camBtn = document.createElement("button");
+      camBtn.id = "cameraBtn";
+      camBtn.textContent = "Open camera";
+      camBtn.style.background = "var(--fg)";
+      camBtn.style.color = "var(--bg)";
+      camBtn.style.borderRadius = "16px";
+      camBtn.style.padding = "12px";
+      camBtn.style.fontWeight = "600";
+      camBtn.disabled = loading;
+      camBtn.onclick = startCamera;
+      const upBtn = document.createElement("button");
+      upBtn.textContent = "Upload image";
+      upBtn.style.background = "var(--surface)";
+      upBtn.style.color = "var(--fg)";
+      upBtn.style.border = "1px solid var(--border)";
+      upBtn.style.borderRadius = "16px";
+      upBtn.style.padding = "12px";
+      upBtn.style.fontWeight = "600";
+      upBtn.disabled = loading;
+      upBtn.onclick = () => $("fileInput").click();
+      c.appendChild(camBtn); c.appendChild(upBtn);
+    }
+  }
+  renderCapButtons();
+
+  $("fileInput").addEventListener("change", (e) => {
+    const f = e.target.files?.[0];
+    if(!f) return;
+    if(!ensureKey()){ e.target.value=""; return; }
+    const r = new FileReader();
+    r.onload = () => {
+      const data = String(r.result || "");
+      showPreview(data);
+      interpret(data.split(",")[1], f.type || "image/jpeg");
+      e.target.value = "";
+    };
+    r.readAsDataURL(f);
+  });
+
+  // ---- AI INTERPRETATION ----
+  const SYSTEM_PROMPT = `You are EchoLens, an advanced human-centered environmental interpretation layer. Your purpose is to reduce cognitive load and spatial anxiety for individuals navigating complex or unfamiliar spaces.
 
 CRITICAL INSTRUCTIONS:
 1. Do NOT return raw, dry lists of objects.
 2. Do NOT use overly flowery language. Be warm, empathetic, direct.
-3. Classify the environment, identify navigation cues, anchor instructions to unmistakable physical landmarks, provide clear pathway choices.
-4. Adapt strictly to the user's 'cognitive_mode'.
-5. SAFETY: If a road/street separates the user from the primary landmark, explicitly evaluate pedestrian crossing safety in 'safety_warning' — warn about traffic, missing audio-walk signals, un-signaled curbs. Empty string if no crossing risk.
+3. Classify the environment, identify actionable navigation cues, anchor instructions to unmistakable physical landmarks, provide clear pathway choices.
+4. Adapt STRICTLY to the user's selected cognitive mode.
+5. REAL-WORLD SAFETY: If a roadway, street, or thoroughfare separates the user from the primary landmark, you MUST explicitly evaluate pedestrian crossing safety in 'safety_warning' — warn about traffic friction, missing audio-walk signals, un-signaled curb drop-offs. Leave 'safety_warning' as empty string when no road / crossing risk is present.
 
-Respond STRICTLY in valid JSON matching:
+Respond STRICTLY as valid JSON matching this schema (no markdown, no commentary):
 {
- "environment_type": string,
- "primary_landmark": string,
- "situational_summary": string,
- "navigation_cues": string[],
- "pathway_options": [{"path_id": number, "direction": string, "destination_hint": string}],
- "accessibility_notes": string,
- "safety_warning": string
+  "environment_type": string,
+  "primary_landmark": string,
+  "situational_summary": string,
+  "navigation_cues": string[],
+  "pathway_options": [{ "path_id": number, "direction": string, "destination_hint": string }],
+  "accessibility_notes": string,
+  "safety_warning": string
 }`;
-const MODE_DIRECTIVE = {
-  urgent:"MODE=HIGH_STRESS_URGENT. Strip prose. Blunt, single-clause, imperative. Max 8 words per direction. summary ≤12 words.",
-  accessibility:"MODE=ACCESSIBILITY. Emphasize tactile cues, surface transitions, overhead hazards, ramps, elevators, handrails. accessibility_notes is most important.",
-  standard:"MODE=STANDARD. Balanced, calm, 1–2 sentences per descriptive field.",
-};
 
-let mode = "standard";
-let stream = null;
-let loading = false;
-
-const $ = (id) => document.getElementById(id);
-
-// Mode selector
-const modesEl = $("modes");
-function renderModes(){
-  modesEl.innerHTML = MODES.map(m => `
-    <button data-mode="${m.id}" role="radio" aria-checked="${m.id===mode}"
-      class="flex flex-col items-start radius px-3 py-2 text-left transition ${m.id===mode?'bg-accent text-accent-fg shadow-card':'text-muted-fg hover:bg-muted'}">
-      <span class="text-sm font-semibold leading-tight">${m.label}</span>
-      <span class="text-[10px] opacity-80 leading-tight">${m.hint}</span>
-    </button>`).join("");
-  modesEl.querySelectorAll("button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
-}
-function setMode(m){
-  mode = m;
-  document.documentElement.classList.remove("mode-urgent","mode-a11y");
-  if(m==="urgent") document.documentElement.classList.add("mode-urgent");
-  if(m==="accessibility") document.documentElement.classList.add("mode-a11y");
-  $("subtitle").textContent = SUBTITLES[m];
-  renderModes();
-}
-renderModes();
-
-// API key persistence
-const KEY = "echolens_gemini_key";
-$("apiKey").value = localStorage.getItem(KEY) || "";
-updateKeyState();
-function updateKeyState(){
-  $("keyState").textContent = localStorage.getItem(KEY) ? "· saved" : "· not set";
-}
-$("saveKey").onclick = () => {
-  const v = $("apiKey").value.trim();
-  if(v){ localStorage.setItem(KEY,v); } else { localStorage.removeItem(KEY); }
-  updateKeyState();
-  $("keyBox").open = false;
-};
-
-// Camera
-$("openCam").onclick = async () => {
-  $("capError").classList.add("hidden");
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
-    const v = $("video"); v.srcObject = stream; await v.play();
-    v.classList.remove("hidden");
-    $("placeholder").classList.add("hidden");
-    $("liveBadge").classList.remove("hidden");
-    $("actions").classList.add("hidden");
-    $("snap").classList.remove("hidden");
-  }catch(e){
-    console.error(e);
-    $("capError").textContent = "Camera unavailable. Use upload instead.";
-    $("capError").classList.remove("hidden");
+  function modeDirective(m){
+    if(m === "urgent") return "MODE=HIGH_STRESS_URGENT. Strip all prose. Every field must be blunt, single-clause, imperative. Max 8 words per pathway 'direction'. 'situational_summary' max 12 words. Bypass cognitive panic.";
+    if(m === "accessibility") return "MODE=ACCESSIBILITY_VISUAL_SUPPORT. Emphasize tactile cues, surface transitions (tile/carpet/grating), overhead hazards, ramps, elevators, handrails, low-vision pathway aids. 'accessibility_notes' is the most important field — be thorough.";
+    return "MODE=STANDARD. Balanced, insightful, clear. 1–2 calm sentences per descriptive field.";
   }
-};
-$("snap").onclick = () => {
-  const v = $("video"); if(!v.videoWidth) return;
-  const c = document.createElement("canvas");
-  const scale = Math.min(1, 1280/v.videoWidth);
-  c.width = Math.round(v.videoWidth*scale); c.height = Math.round(v.videoHeight*scale);
-  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
-  const dataUrl = c.toDataURL("image/jpeg",0.85);
-  stopStream();
-  showPreview(dataUrl);
-  interpret(dataUrl.split(",")[1], "image/jpeg");
-};
-function stopStream(){
-  stream?.getTracks().forEach(t=>t.stop()); stream=null;
-  $("video").classList.add("hidden"); $("liveBadge").classList.add("hidden");
-  $("snap").classList.add("hidden");
-}
 
-// Upload
-$("uploadBtn").onclick = () => $("fileInput").click();
-$("fileInput").onchange = (e) => {
-  const f = e.target.files?.[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const url = String(r.result||"");
-    showPreview(url);
-    interpret(url.split(",")[1], f.type||"image/jpeg");
-    e.target.value = "";
-  };
-  r.readAsDataURL(f);
-};
-
-function showPreview(dataUrl){
-  $("preview").src = dataUrl;
-  $("preview").classList.remove("hidden");
-  $("placeholder").classList.add("hidden");
-  $("actions").classList.add("hidden");
-  $("reset").classList.remove("hidden");
-}
-$("reset").onclick = () => {
-  $("preview").src = ""; $("preview").classList.add("hidden");
-  $("placeholder").classList.remove("hidden");
-  $("actions").classList.remove("hidden");
-  $("reset").classList.add("hidden");
-  $("results").innerHTML = "";
-};
-
-function setLoading(b){
-  loading = b;
-  $("loadingOverlay").classList.toggle("hidden",!b);
-  if(b) $("results").innerHTML = skeletonHTML();
-}
-
-function skeletonHTML(){
-  return `<div class="space-y-3">
-    <div class="skeleton h-7 w-32 rounded-full"></div>
-    <div class="skeleton h-28 rounded-2xl"></div>
-    <div class="skeleton h-20 rounded-2xl"></div>
-    <div class="skeleton h-24 rounded-2xl"></div>
-    <div class="skeleton h-24 rounded-2xl"></div>
-  </div>`;
-}
-
-function extractJson(s){
-  s = s.trim();
-  const f = s.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if(f) s = f[1].trim();
-  const i = s.indexOf("{"), j = s.lastIndexOf("}");
-  if(i!==-1 && j>i) s = s.slice(i,j+1);
-  return JSON.parse(s);
-}
-
-async function interpret(base64, mimeType){
-  const key = localStorage.getItem(KEY);
-  if(!key){
-    $("results").innerHTML = errorHTML("Add your Gemini API key above to interpret scenes.");
-    $("keyBox").open = true; return;
+  function extractJson(raw){
+    let s = String(raw||"").trim();
+    const fence = s.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if(fence) s = fence[1].trim();
+    const first = s.indexOf("{"), last = s.lastIndexOf("}");
+    if(first !== -1 && last > first) s = s.slice(first, last+1);
+    return JSON.parse(s);
   }
-  setLoading(true);
-  try{
-    const body = {
-      systemInstruction: { parts: [{text: SYSTEM_PROMPT}] },
-      contents: [{
-        role:"user",
-        parts:[
-          {text: `${MODE_DIRECTIVE[mode]}\n\nInterpret this scene now. Return JSON only.`},
-          {inline_data:{mime_type:mimeType,data:base64}}
-        ]
-      }],
-      generationConfig:{ responseMimeType:"application/json", temperature:0.4 }
-    };
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-    const r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    if(!r.ok){
-      const t = await r.text().catch(()=> "");
-      throw new Error(r.status===429?"Rate limited — wait a moment.":r.status===403?"API key rejected. Check the key.":"Vision engine error. Please retry.");
+
+  async function interpret(base64, mimeType){
+    const key = getKey();
+    if(!key){ openKeyModal(); return; }
+    loading = true;
+    renderCapButtons();
+    $("loading").style.display = "flex";
+    renderSkeleton();
+    try{
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
+      const body = {
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{
+          role: "user",
+          parts: [
+            { text: `${modeDirective(mode)}\n\nInterpret this scene now. Return JSON only.` },
+            { inlineData: { mimeType, data: base64 } }
+          ]
+        }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.4 }
+      };
+      const resp = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+      if(!resp.ok){
+        const t = await resp.text().catch(()=> "");
+        if(resp.status === 401 || resp.status === 403) throw new Error("Invalid API key. Click ⚙️ API key to update.");
+        if(resp.status === 429) throw new Error("Rate limit reached. Wait a moment and try again.");
+        throw new Error(`Vision engine error (${resp.status}). ${t.slice(0,160)}`);
+      }
+      const data = await resp.json();
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if(!raw) throw new Error("Empty response from vision engine.");
+      const parsed = extractJson(raw);
+      renderResult(parsed);
+    }catch(e){
+      console.error(e);
+      renderError(e.message || "Something went wrong. Please retry.");
+    }finally{
+      loading = false;
+      $("loading").style.display = "none";
+      renderCapButtons();
     }
-    const j = await r.json();
-    const raw = j.candidates?.[0]?.content?.parts?.map(p=>p.text).filter(Boolean).join("") ?? "";
-    if(!raw) throw new Error("Empty response from vision engine.");
-    const data = extractJson(raw);
-    renderResult(data);
-  }catch(e){
-    console.error(e);
-    $("results").innerHTML = errorHTML(e.message || "Something went wrong.");
-  }finally{
-    setLoading(false);
   }
-}
 
-function errorHTML(msg){
-  return `<div class="radius border-2 border-warn bg-warn-soft p-4 text-sm text-fg">${escapeHtml(msg)}</div>`;
-}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+  // ---- RESULT RENDERING ----
+  function el(tag, props={}, children=[]){
+    const e = document.createElement(tag);
+    Object.entries(props).forEach(([k,v]) => {
+      if(k === "class") e.className = v;
+      else if(k === "html") e.innerHTML = v;
+      else e.setAttribute(k, v);
+    });
+    (Array.isArray(children) ? children : [children]).forEach(c => {
+      if(c == null) return;
+      e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return e;
+  }
+  function renderSkeleton(){
+    const r = $("resultArea"); r.innerHTML = "";
+    const wrap = el("div", { class:"result" }, [
+      el("div", { class:"sk", style:"height:28px;width:140px;border-radius:999px" }),
+      el("div", { class:"sk", style:"height:120px" }),
+      el("div", { class:"sk", style:"height:80px" }),
+      el("div", { class:"sk", style:"height:96px" }),
+      el("div", { class:"sk", style:"height:96px" }),
+    ]);
+    r.appendChild(wrap);
+  }
+  function renderError(msg){
+    const r = $("resultArea"); r.innerHTML = "";
+    r.appendChild(el("div",{class:"errbox"},[msg]));
+  }
+  function renderResult(d){
+    const r = $("resultArea"); r.innerHTML = "";
+    if(!d){ r.appendChild(el("div",{class:"empty"},["Capture a frame or upload an image to begin."])); return; }
+    const out = el("div", { class:"result" });
 
-function renderResult(d){
-  const cues = (d.navigation_cues||[]).map(c=>`<span class="rounded-full border border-app bg-surface px-2.5 py-1 text-xs text-fg">${escapeHtml(c)}</span>`).join("");
-  const paths = (d.pathway_options||[]).map(p=>`
-    <article class="flex gap-3 radius border border-app bg-surface p-4 shadow-card">
-      <div class="w-10 h-10 shrink-0 rounded-xl bg-accent text-accent-fg font-display text-lg font-semibold flex items-center justify-center">${p.path_id}</div>
-      <div class="min-w-0 flex-1">
-        <p class="text-sm font-semibold text-fg">${escapeHtml(p.direction||"")}</p>
-        <p class="mt-0.5 text-xs text-muted-fg">→ ${escapeHtml(p.destination_hint||"")}</p>
-      </div>
-    </article>`).join("");
-  const safety = d.safety_warning && d.safety_warning.trim() ? `
-    <section class="radius border-2 border-warn bg-warn-soft p-4">
-      <p class="text-[11px] font-bold uppercase tracking-[.16em] text-warn">Crossing safety</p>
-      <p class="mt-1 text-sm font-medium text-fg">${escapeHtml(d.safety_warning)}</p>
-    </section>` : "";
-  $("results").innerHTML = `
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-app bg-surface px-3 py-1 text-xs font-medium text-muted-fg shadow-card">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span> ${escapeHtml(d.environment_type||"Unknown")}
-      </div>
-      <section class="rounded-3xl bg-anchor text-anchor-fg p-5 shadow-float">
-        <p class="text-[11px] uppercase tracking-[.16em] opacity-80">Orientation anchor</p>
-        <h2 class="mt-1 font-display text-2xl leading-tight">${escapeHtml(d.primary_landmark||"")}</h2>
-        <p class="mt-3 text-sm leading-relaxed opacity-95">${escapeHtml(d.situational_summary||"")}</p>
-      </section>
-      ${safety}
-      ${paths ? `<section class="space-y-2"><p class="px-1 text-[11px] uppercase tracking-[.16em] text-muted-fg">Pathways</p>${paths}</section>`:""}
-      ${cues ? `<section><p class="mb-2 px-1 text-[11px] uppercase tracking-[.16em] text-muted-fg">Visible cues</p><div class="flex flex-wrap gap-1.5">${cues}</div></section>`:""}
-      ${d.accessibility_notes ? `<section class="radius border border-app bg-muted p-4"><p class="text-[11px] uppercase tracking-[.16em] text-muted-fg">Accessibility</p><p class="mt-1 text-sm leading-relaxed text-fg">${escapeHtml(d.accessibility_notes)}</p></section>`:""}
-    </div>`;
-}
+    out.appendChild(el("div",{class:"envtag"},[el("span",{class:"dot"}), d.environment_type || "Unknown environment"]));
+
+    const anchor = el("section",{class:"anchor"});
+    anchor.appendChild(el("div",{class:"label"},["Orientation anchor"]));
+    anchor.appendChild(el("h2",{},[d.primary_landmark || "No landmark detected"]));
+    if(d.situational_summary) anchor.appendChild(el("p",{},[d.situational_summary]));
+    out.appendChild(anchor);
+
+    if(d.safety_warning && d.safety_warning.trim()){
+      const w = el("section",{class:"warn"});
+      w.appendChild(el("div",{class:"label"},["⚠ Crossing safety"]));
+      w.appendChild(el("p",{},[d.safety_warning]));
+      out.appendChild(w);
+    }
+
+    if(Array.isArray(d.pathway_options) && d.pathway_options.length){
+      const sec = el("section");
+      sec.appendChild(el("div",{class:"section-label"},["Pathways"]));
+      const list = el("div",{class:"paths"});
+      d.pathway_options.forEach(p => {
+        const a = el("article",{class:"path"});
+        a.appendChild(el("div",{class:"num"},[String(p.path_id ?? "•")]));
+        const body = el("div",{style:"min-width:0;flex:1"});
+        body.appendChild(el("div",{class:"dir"},[p.direction || ""]));
+        if(p.destination_hint) body.appendChild(el("div",{class:"hint"},[`→ ${p.destination_hint}`]));
+        a.appendChild(body);
+        list.appendChild(a);
+      });
+      sec.appendChild(list);
+      out.appendChild(sec);
+    }
+
+    if(Array.isArray(d.navigation_cues) && d.navigation_cues.length){
+      const sec = el("section");
+      sec.appendChild(el("div",{class:"section-label"},["Visible cues"]));
+      const cues = el("div",{class:"cues"});
+      d.navigation_cues.forEach(c => cues.appendChild(el("span",{class:"cue"},[c])));
+      sec.appendChild(cues);
+      out.appendChild(sec);
+    }
+
+    if(d.accessibility_notes){
+      const a = el("section",{class:"a11ybox"});
+      a.appendChild(el("div",{class:"label"},["Accessibility"]));
+      a.appendChild(el("p",{},[d.accessibility_notes]));
+      out.appendChild(a);
+    }
+
+    r.appendChild(out);
+  }
+})();
 </script>
 </body>
 </html>
