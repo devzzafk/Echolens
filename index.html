@@ -61,7 +61,6 @@
     <p id="subtitle" class="mt-2 text-sm text-muted-fg">What if the world could explain itself?</p>
   </header>
 
-  <!-- API key -->
   <details id="keyBox" class="mb-4 radius border border-app bg-surface shadow-card p-3 text-sm">
     <summary class="cursor-pointer font-semibold">Gemini API key <span id="keyState" class="text-muted-fg font-normal"></span></summary>
     <p class="mt-2 text-xs text-muted-fg">Get a free key at <a class="underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Stored only in your browser.</p>
@@ -71,10 +70,8 @@
     </div>
   </details>
 
-  <!-- Mode selector -->
   <div role="radiogroup" aria-label="Cognitive mode" class="grid grid-cols-3 gap-1 radius border border-app bg-surface p-1 shadow-card" id="modes"></div>
 
-  <!-- Capture / preview -->
   <section id="captureSection" class="mt-5 space-y-3">
     <div id="frame" class="relative aspect-[4/5] overflow-hidden rounded-3xl border border-app bg-surface shadow-card">
       <video id="video" playsinline muted class="hidden absolute inset-0 w-full h-full object-cover"></video>
@@ -102,11 +99,10 @@
     <button id="reset" class="hidden w-full radius border border-app bg-surface py-2.5 text-sm font-semibold">New scene</button>
   </section>
 
-  <!-- Results -->
   <section id="results" class="mt-6"></section>
 
   <footer class="mt-10 text-center text-[10px] uppercase tracking-[.18em] text-muted-fg">
-    Zero-retention · Vision by Google Gemini
+    Zero-retention · Vision by JuneVerse
   </footer>
 </main>
 
@@ -268,87 +264,5 @@ function skeletonHTML(){
 
 function extractJson(s){
   s = s.trim();
-  const f = s.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if(f) s = f[1].trim();
-  const i = s.indexOf("{"), j = s.lastIndexOf("}");
-  if(i!==-1 && j>i) s = s.slice(i,j+1);
-  return JSON.parse(s);
-}
-
-async function interpret(base64, mimeType){
-  const key = localStorage.getItem(KEY);
-  if(!key){
-    $("results").innerHTML = errorHTML("Add your Gemini API key above to interpret scenes.");
-    $("keyBox").open = true; return;
-  }
-  setLoading(true);
-  try{
-    const body = {
-      systemInstruction: { parts: [{text: SYSTEM_PROMPT}] },
-      contents: [{
-        role:"user",
-        parts:[
-          {text: `${MODE_DIRECTIVE[mode]}\n\nInterpret this scene now. Return JSON only.`},
-          {inline_data:{mime_type:mimeType,data:base64}}
-        ]
-      }],
-      generationConfig:{ responseMimeType:"application/json", temperature:0.4 }
-    };
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-    const r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    if(!r.ok){
-      const t = await r.text().catch(()=> "");
-      throw new Error(r.status===429?"Rate limited — wait a moment.":r.status===403?"API key rejected. Check the key.":"Vision engine error. Please retry.");
-    }
-    const j = await r.json();
-    const raw = j.candidates?.[0]?.content?.parts?.map(p=>p.text).filter(Boolean).join("") ?? "";
-    if(!raw) throw new Error("Empty response from vision engine.");
-    const data = extractJson(raw);
-    renderResult(data);
-  }catch(e){
-    console.error(e);
-    $("results").innerHTML = errorHTML(e.message || "Something went wrong.");
-  }finally{
-    setLoading(false);
-  }
-}
-
-function errorHTML(msg){
-  return `<div class="radius border-2 border-warn bg-warn-soft p-4 text-sm text-fg">${escapeHtml(msg)}</div>`;
-}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
-
-function renderResult(d){
-  const cues = (d.navigation_cues||[]).map(c=>`<span class="rounded-full border border-app bg-surface px-2.5 py-1 text-xs text-fg">${escapeHtml(c)}</span>`).join("");
-  const paths = (d.pathway_options||[]).map(p=>`
-    <article class="flex gap-3 radius border border-app bg-surface p-4 shadow-card">
-      <div class="w-10 h-10 shrink-0 rounded-xl bg-accent text-accent-fg font-display text-lg font-semibold flex items-center justify-center">${p.path_id}</div>
-      <div class="min-w-0 flex-1">
-        <p class="text-sm font-semibold text-fg">${escapeHtml(p.direction||"")}</p>
-        <p class="mt-0.5 text-xs text-muted-fg">→ ${escapeHtml(p.destination_hint||"")}</p>
-      </div>
-    </article>`).join("");
-  const safety = d.safety_warning && d.safety_warning.trim() ? `
-    <section class="radius border-2 border-warn bg-warn-soft p-4">
-      <p class="text-[11px] font-bold uppercase tracking-[.16em] text-warn">Crossing safety</p>
-      <p class="mt-1 text-sm font-medium text-fg">${escapeHtml(d.safety_warning)}</p>
-    </section>` : "";
-  $("results").innerHTML = `
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-app bg-surface px-3 py-1 text-xs font-medium text-muted-fg shadow-card">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span> ${escapeHtml(d.environment_type||"Unknown")}
-      </div>
-      <section class="rounded-3xl bg-anchor text-anchor-fg p-5 shadow-float">
-        <p class="text-[11px] uppercase tracking-[.16em] opacity-80">Orientation anchor</p>
-        <h2 class="mt-1 font-display text-2xl leading-tight">${escapeHtml(d.primary_landmark||"")}</h2>
-        <p class="mt-3 text-sm leading-relaxed opacity-95">${escapeHtml(d.situational_summary||"")}</p>
-      </section>
-      ${safety}
-      ${paths ? `<section class="space-y-2"><p class="px-1 text-[11px] uppercase tracking-[.16em] text-muted-fg">Pathways</p>${paths}</section>`:""}
-      ${cues ? `<section><p class="mb-2 px-1 text-[11px] uppercase tracking-[.16em] text-muted-fg">Visible cues</p><div class="flex flex-wrap gap-1.5">${cues}</div></section>`:""}
-      ${d.accessibility_notes ? `<section class="radius border border-app bg-muted p-4"><p class="text-[11px] uppercase tracking-[.16em] text-muted-fg">Accessibility</p><p class="mt-1 text-sm leading-relaxed text-fg">${escapeHtml(d.accessibility_notes)}</p></section>`:""}
-    </div>`;
-}
-</script>
-</body>
-</html>
+  const f = s.match(/^
+http://googleusercontent.com/immersive_entry_chip/0
